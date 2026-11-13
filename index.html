@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SILENCE_PROTOCOL // SOMA_LINK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap');
+        .font-mono-tech { font-family: 'Share Tech Mono', monospace; }
+        body { font-family: 'Inter', sans-serif; background-color: #0b0708; color: #d1c5c6; overscroll-behavior: none; }
+        .crt::after {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 0, 0, 0.01), rgba(255, 0, 0, 0.02));
+            z-index: 99999; background-size: 100% 3px, 3px 100%; pointer-events: none;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .animate-shake { animation: shake 0.25s ease-in-out; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: #12090b; }
+        ::-webkit-scrollbar-thumb { background: #7f1d1d; }
+    </style>
+</head>
+<body class="crt min-h-screen flex flex-col items-center justify-center p-0 md:p-4">
+
+    <!-- БЛОКИРОВКА ПОМОЩИ ("ЧЕСОТКА БЕССИЛИЯ") -->
+    <div id="block-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-6">
+        <div id="block-card" class="w-full max-w-sm bg-[#14080a] border border-red-500/80 p-6 rounded-2xl space-y-4 shadow-2xl text-center">
+            <div class="text-red-500 font-mono-tech text-xs tracking-widest uppercase">// ПРОТОКОЛ БЕЗОПАСНОСТИ SOMA LINK</div>
+            <h3 class="text-base font-bold text-white">Прямой контакт заблокирован</h3>
+            <p class="text-xs text-gray-300 leading-relaxed">
+                Система запрещает перевод средств, передачу контактов и спасательство. Ваша единственная задача в Neeon City — наблюдать за чужим падением.
+            </p>
+            <div class="bg-black/50 p-3 rounded-xl text-[11px] font-mono-tech text-red-400 border border-red-500/20">
+                Доступны только дежурные реакции для прокачки ранга.
+            </div>
+            <button onclick="closeBlockModal()" class="w-full py-2.5 bg-red-950/60 hover:bg-red-900/80 border border-red-500/50 text-red-200 text-xs font-mono-tech rounded-xl transition">
+                ПРИНЯТЬ БЕССИЛИЕ И ПРОДОЛЖИТЬ
+            </button>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ПУБЛИКАЦИИ (666 СИМВОЛОВ) -->
+    <div id="post-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#12080a] border border-red-500/50 p-5 rounded-2xl space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-mono-tech text-red-400 uppercase">// РЕЖИМ «КРИЧАЩИЙ»</span>
+                <button onclick="closePostModal()" class="text-gray-500 hover:text-white text-sm">✕</button>
+            </div>
+            <p class="text-xs text-gray-400">
+                Опишите свою реальную проблему или страх (до 666 символов). Пост уйдет в общую сеть. Никто не сможет вам помочь — люди будут только смотреть.
+            </p>
+            <textarea id="new-pain-text" rows="5" maxlength="666" oninput="updateCharCount()" placeholder="Выплесните то, о чем молчите..." class="w-full bg-[#080405] border border-red-500/30 focus:border-red-500 rounded-xl p-3 text-sm text-white outline-none resize-none font-mono-tech"></textarea>
+            <div class="flex justify-between items-center text-[11px] text-gray-500 font-mono-tech">
+                <span class="text-red-400/80">Анонимный сигнал</span>
+                <span id="char-count" class="text-red-400 font-bold">0 / 666</span>
+            </div>
+            <button id="send-btn" onclick="submitPainPost()" class="w-full py-3 bg-red-950 hover:bg-red-900 border border-red-500/60 text-red-200 font-bold text-xs font-mono-tech uppercase tracking-wider rounded-xl transition">
+                ОТПРАВИТЬ СИГНАЛ В ПУСТОТУ
+            </button>
+        </div>
+    </div>
+
+    <!-- ПАСХАЛКА: 10 ПОПЫТОК ПОМОЧЬ -->
+    <div id="egg-modal" class="hidden fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-6">
+        <div class="w-full max-w-sm bg-[#0b0708] border border-amber-400/70 p-6 rounded-2xl space-y-4 shadow-2xl text-center">
+            <div class="text-amber-400 font-mono-tech text-xs tracking-widest">// СБОЙ ПРОТОКОЛА</div>
+            <h3 class="text-base font-bold text-white">Вы нарушитель</h3>
+            <p class="text-xs text-gray-300 leading-relaxed">Десять попыток помочь. Система не рассчитана на тех, кто не готов просто смотреть. Настоящая помощь существует только за пределами Soma Link: напишите живому человеку, который давно молчит.</p>
+            <div class="bg-black/50 p-3 rounded-xl text-[11px] font-mono-tech text-amber-300 border border-amber-400/30">Статус получен: НАРУШИТЕЛЬ ПРОТОКОЛА // +100 XP</div>
+            <button onclick="shareEgg()" class="w-full py-2.5 bg-amber-950/50 hover:bg-amber-900/60 border border-amber-400/50 text-amber-200 text-xs font-mono-tech rounded-xl transition">РАССКАЗАТЬ ДРУГИМ</button>
+            <button onclick="closeEgg()" class="w-full py-2 text-gray-500 text-xs font-mono-tech">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+    <div class="w-full max-w-md bg-[#0e0608] md:border md:border-red-500/30 md:rounded-3xl shadow-2xl flex flex-col h-screen md:h-[840px] overflow-hidden relative">
+        
+        <!-- СТАТУС-БАР -->
+        <div class="bg-[#12080a] px-4 py-3 border-b border-red-500/20 space-y-2">
+            <div class="flex justify-between items-center text-[11px] font-mono-tech">
+                <div class="flex items-center space-x-2 text-red-400">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span id="user-badge">@GUEST</span>
+                </div>
+                <div class="text-red-400 font-bold" id="rank-title">УР. 1 // СЛУЧАЙНЫЙ ПРОХОЖИЙ</div>
+            </div>
+            <div class="w-full bg-[#080405] h-1.5 rounded-full overflow-hidden border border-red-950">
+                <div id="xp-bar" class="bg-gradient-to-r from-red-900 to-red-500 h-full transition-all duration-500" style="width: 10%;"></div>
+            </div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-gray-500">
+                <span>ОПЫТ СВИДЕТЕЛЯ: <b id="xp-val" class="text-gray-300">0 XP</b></span>
+                <span>ИНДЕКС РАВНОДУШИЯ: <b id="indiff-val" class="text-red-400">100%</b></span>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКИ -->
+        <div class="bg-[#100709] px-2 py-2 border-b border-red-500/20 grid grid-cols-3 gap-1 text-center text-[11px] font-mono-tech">
+            <button id="tab-feed" onclick="switchTab('feed')" class="py-1.5 rounded-lg bg-red-950/60 text-red-400 font-bold border border-red-500/40 transition">ЛЕНТА БОЛИ</button>
+            <button id="tab-top" onclick="switchTab('top')" class="py-1.5 rounded-lg text-gray-400 hover:text-white transition">ТОП ЦИНИКОВ</button>
+            <button id="tab-profile" onclick="switchTab('profile')" class="py-1.5 rounded-lg text-gray-400 hover:text-white transition">МОЙ ОТЧЁТ</button>
+        </div>
+
+        <!-- ЭКРАН 1: ЛЕНТА -->
+        <div id="view-feed" class="flex-1 overflow-y-auto p-3 space-y-3 pb-20">
+            <button onclick="openPostModal()" class="w-full py-2.5 px-4 bg-[#12080a] hover:bg-[#1a0b0e] border border-dashed border-red-500/40 rounded-xl text-left flex justify-between items-center transition group">
+                <div>
+                    <div class="text-xs font-bold text-red-400 group-hover:text-red-300">+ Рассказать свою историю (лимит 666)</div>
+                    <div class="text-[10px] text-gray-500">Анонимный крик в сеть Soma Link.</div>
+                </div>
+                <span class="text-red-400 font-mono-tech text-lg">→</span>
+            </button>
+            <div id="posts-container" class="space-y-3">
+                <div class="text-center text-xs text-gray-500 py-10 font-mono-tech">Загрузка сети Neeon City...</div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН 2: ТОП -->
+        <div id="view-top" class="hidden flex-1 overflow-y-auto p-4 space-y-3">
+            <div class="text-xs font-mono-tech text-red-400 uppercase tracking-wider border-b border-red-500/20 pb-2">// РЕЙТИНГ АБСОЛЮТНЫХ НАБЛЮДАТЕЛЕЙ</div>
+            <div id="leaderboard-list" class="space-y-2"></div>
+        </div>
+
+        <!-- ЭКРАН 3: ПРОФИЛЬ -->
+        <div id="view-profile" class="hidden flex-1 overflow-y-auto p-5 flex flex-col justify-between">
+            <div class="bg-[#12080a] border border-red-500/40 p-5 rounded-2xl space-y-4 relative overflow-hidden">
+                <div class="flex justify-between items-center text-[10px] font-mono-tech text-gray-500">
+                    <span>NEEOSOMA // SOMA_LINK</span>
+                    <span>SECURE NODE</span>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-400 font-mono-tech">СВИДЕТЕЛЬ:</div>
+                    <div id="card-name" class="text-xl font-bold text-white tracking-wide">@USER</div>
+                    <div id="card-rank" class="text-xs font-mono-tech text-red-400 mt-0.5">УР. 1 // СЛУЧАЙНЫЙ ПРОХОЖИЙ</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-red-500/20 font-mono-tech">
+                    <div class="bg-[#080405] p-2.5 rounded-xl border border-red-950">
+                        <div class="text-[10px] text-gray-500">ПРОСМОТРЕНО ДРАМ</div>
+                        <div id="stat-seen" class="text-lg font-bold text-white">0</div>
+                    </div>
+                    <div class="bg-[#080405] p-2.5 rounded-xl border border-red-950">
+                        <div class="text-[10px] text-gray-500">ПУСТЫХ РЕАКЦИЙ</div>
+                        <div id="stat-reacts" class="text-lg font-bold text-red-400">0</div>
+                    </div>
+                    <div class="bg-[#080405] p-2.5 rounded-xl border border-red-950">
+                        <div class="text-[10px] text-gray-500">ПОПЫТОК ПОМОЧЬ</div>
+                        <div id="stat-attempts" class="text-lg font-bold text-red-600">0</div>
+                    </div>
+                    <div class="bg-[#080405] p-2.5 rounded-xl border border-red-950">
+                        <div class="text-[10px] text-gray-500">РЕАЛЬНАЯ ПОМОЩЬ</div>
+                        <div class="text-lg font-bold text-gray-600">0</div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="copyShareText()" class="w-full py-3.5 bg-red-950 hover:bg-red-900 border border-red-500/50 text-red-200 font-bold text-xs font-mono-tech uppercase tracking-wider rounded-xl transition">
+                ПОДЕЛИТЬСЯ ОТЧЁТОМ СОУЧАСТИЯ
+            </button>
+        </div>
+    </div>
+
+<script src="config.js"></script>
+<script>
+    const cfg = window.SOMA_CONFIG || {};
+    const SUPABASE_URL = cfg.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = cfg.SUPABASE_KEY;
+    let supabaseClient = null;
+    try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+    catch (e) { console.error('Supabase не подключён:', e); }
+    const BOT_LINK = cfg.BOT_LINK || location.href;
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const safeId = s => String(s).replace(/[^\w-]/g, '');
+    function anonLabel(s) {
+        let n = 0; const str = String(s);
+        for (let i = 0; i < str.length; i++) n = (n * 31 + str.charCodeAt(i)) >>> 0;
+        return 'Аноним #' + (1000 + n % 9000);
+    }
+    const displayAuthor = a => /\(АНОНИМ\)\s*$/.test(a || '') ? anonLabel(String(a).replace(/\s*\(АНОНИМ\)\s*$/, '')) : a;
+
+    let player = { name: "GUEST", xp: 0, seen: 0, reacts: 0, helpAttempts: 0, reactedPosts: {} };
+    let feedPosts = [];
+
+    const ranks = [
+        { minXp: 0, title: "УР. 1 // СЛУЧАЙНЫЙ ПРОХОЖИЙ" },
+        { minXp: 50, title: "УР. 2 // ЛЮБОПЫТНЫЙ ЗРИТЕЛЬ" },
+        { minXp: 150, title: "УР. 3 // ПОТРЕБИТЕЛЬ ДРАМ" },
+        { minXp: 300, title: "УР. 4 // ЦИНИЧНЫЙ ОБЫВАТЕЛЬ" },
+        { minXp: 500, title: "УР. 5 // МОЛЧАЛИВИЙ АНГЕЛ" },
+        { minXp: 1000, title: "УР. 10 // АБСОЛЮТНЫЙ НАБЛЮДАТЕЛЬ" }
+    ];
+
+    async function initApp() {
+        try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (e) {}
+        try { player.reactedPosts = JSON.parse(localStorage.getItem('soma_reacted') || '{}'); } catch (e) {}
+        const k = SUPABASE_ANON_KEY || '';
+        if (!/^https:\/\/[a-z0-9]+\.supabase\.co\/?$/.test(SUPABASE_URL || '')) notify('В config.js неверный SUPABASE_URL. Нужен вид https://abcdefgh.supabase.co (без /dashboard, без пробелов).');
+        else if (/^sb_secret_/.test(k)) notify('В config.js вставлен Secret-ключ. Нужен Publishable (sb_publishable_...). Secret-ключ лучше пересоздать в Supabase.');
+        else if (k.length < 20 || /ВСТАВЬ/.test(k)) notify('В config.js не вписан SUPABASE_KEY.');
+        else if (!supabaseClient) notify('Сеть не подключена. Проверь config.js.');
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe?.user) {
+            const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+            player.name = tgUser.username || tgUser.first_name || "AGENT_" + Math.floor(Math.random()*1000);
+        } else {
+            let savedName = localStorage.getItem('soma_local_name');
+            if (!savedName) {
+                savedName = "AGENT_" + Math.floor(1000 + Math.random() * 9000);
+                localStorage.setItem('soma_local_name', savedName);
+            }
+            player.name = savedName;
+        }
+
+        try {
+            let { data } = await supabaseClient.from('soma_users').select('*').eq('username', player.name).single();
+            if (data) {
+                player = { ...player, xp: data.xp || 0, seen: data.seen || 0, reacts: data.reacts || 0, helpAttempts: data.help_attempts || 0 };
+            } else {
+                await supabaseClient.from('soma_users').insert([{ username: player.name, xp: 0, seen: 0, reacts: 0, help_attempts: 0 }]);
+            }
+        } catch(e) {}
+
+        updateHeader();
+        await fetchPosts();
+        setInterval(refreshFeed, 8000);
+        document.addEventListener('visibilitychange', refreshFeed);
+    }
+
+    async function refreshFeed() {
+        if (!supabaseClient || document.hidden) return;
+        try {
+            const { data, error } = await supabaseClient.from('soma_posts').select('*').order('created_at', { ascending: false }).limit(50);
+            if (error || !data || !data.length) return;
+            const sig = d => d.map(p => p.id + ':' + p.likes).join('|');
+            if (sig(data) !== sig(feedPosts)) { feedPosts = data; renderFeed(); }
+        } catch (e) {}
+    }
+
+    async function fetchPosts() {
+        try {
+            let { data } = await supabaseClient.from('soma_posts').select('*').order('created_at', { ascending: false }).limit(50);
+            if (data && data.length > 0) {
+                feedPosts = data;
+            } else {
+                throw new Error('Empty');
+            }
+        } catch(e) {
+            if (feedPosts.length === 0) {
+                feedPosts = [{ id: 'demo_1', author: 'Аноним #4092', tag: 'ДОЛГИ', text: 'Сегодня закрыли доступ к рабочей учетке. На карте 400 рублей, завтра платить за аренду. Впервые не знаю, что делать.', likes: 42, created_at: new Date() }];
+            }
+        }
+        renderFeed();
+    }
+
+    async function updateCloudProfile() {
+        try {
+            await supabaseClient.from('soma_users').update({
+                xp: player.xp,
+                seen: player.seen,
+                reacts: player.reacts,
+                help_attempts: player.helpAttempts
+            }).eq('username', player.name);
+        } catch(e) {}
+    }
+
+    function updateHeader() {
+        document.getElementById('user-badge').innerText = `@${player.name}`;
+        document.getElementById('xp-val').innerText = `${player.xp} XP`;
+        
+        let currentRank = ranks[0], nextRank = ranks[1];
+        for (let i = 0; i < ranks.length; i++) {
+            if (player.xp >= ranks[i].minXp) {
+                currentRank = ranks[i];
+                nextRank = ranks[i + 1] || { minXp: player.xp + 500 };
+            }
+        }
+        document.getElementById('rank-title').innerText = currentRank.title;
+        const progress = Math.min(100, ((player.xp - currentRank.minXp) / (nextRank.minXp - currentRank.minXp)) * 100);
+        document.getElementById('xp-bar').style.width = `${Math.max(8, progress)}%`;
+
+        document.getElementById('card-name').innerText = `@${player.name}`;
+        document.getElementById('card-rank').innerText = currentRank.title;
+        document.getElementById('stat-seen').innerText = player.seen;
+        document.getElementById('stat-reacts').innerText = player.reacts;
+        document.getElementById('stat-attempts').innerText = player.helpAttempts;
+    }
+
+    function renderFeed() {
+        const container = document.getElementById('posts-container');
+        container.innerHTML = '';
+
+        feedPosts.forEach(post => {
+            const isReacted = player.reactedPosts[post.id];
+            const card = document.createElement('div');
+            card.className = "bg-[#12080a] border border-red-500/20 rounded-2xl p-4 space-y-3 transition";
+            card.innerHTML = `
+                <div class="flex justify-between items-center text-[10px] font-mono-tech">
+                    <span class="text-red-400 font-bold">${esc(displayAuthor(post.author))}</span>
+                    <span class="px-2 py-0.5 bg-red-950/60 text-red-300 rounded border border-red-500/20">${esc(post.tag || 'ЛИЧНАЯ БОЛЬ')}</span>
+                </div>
+                <p class="text-xs sm:text-sm text-gray-200 leading-relaxed font-mono-tech">${esc(post.text)}</p>
+                <button onclick="triggerHelpBlock()" class="w-full py-2 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-[11px] font-mono-tech text-red-400 flex items-center justify-center space-x-2 transition">
+                    <span>⛔ ПОМОЧЬ РЕАЛЬНО / НАПИСАТЬ В ЛС</span>
+                </button>
+                <div class="pt-2 border-t border-red-500/10 space-y-2">
+                    ${isReacted ? `
+                        <div class="text-[11px] font-mono-tech text-red-400 flex justify-between items-center">
+                            <span>✓ Сурогат отправлен: «${esc(isReacted)}»</span>
+                            <span class="text-amber-400">+XP</span>
+                        </div>
+                    ` : `
+                        <div class="flex justify-between items-center">
+                            <div class="flex space-x-1.5">
+                                <button onclick="reactToPost('${safeId(post.id)}', '❤️', 10)" class="px-2.5 py-1 bg-[#1a0b0e] hover:bg-red-950 rounded-lg text-sm border border-red-500/20">❤️</button>
+                                <button onclick="reactToPost('${safeId(post.id)}', '🤗', 10)" class="px-2.5 py-1 bg-[#1a0b0e] hover:bg-red-950 rounded-lg text-sm border border-red-500/20">🤗</button>
+                                <button onclick="reactToPost('${safeId(post.id)}', '🙏', 10)" class="px-2.5 py-1 bg-[#1a0b0e] hover:bg-red-950 rounded-lg text-sm border border-red-500/20">🙏</button>
+                            </div>
+                            <span class="text-[10px] font-mono-tech text-gray-500">Смотрят: ${post.likes || 1}</span>
+                        </div>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            <button onclick="reactToPost('${safeId(post.id)}', 'Держись, всё наладится!', 25)" class="w-full text-left px-3 py-1.5 bg-[#180a0d] hover:bg-red-950/40 text-[11px] text-gray-300 rounded-lg border border-red-500/20 flex justify-between items-center">
+                                <span>💬 «Держись, всё наладится!»</span>
+                                <span class="text-[10px] font-mono-tech text-red-400">+25 XP</span>
+                            </button>
+                        </div>
+                    `}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    async function reactToPost(postId, reactionText, xpGain) {
+        if (player.reactedPosts[postId]) return;
+        player.reactedPosts[postId] = reactionText;
+        try { localStorage.setItem('soma_reacted', JSON.stringify(player.reactedPosts)); } catch (e) {}
+        try { Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch (e) {}
+        player.xp += xpGain;
+        player.reacts++;
+        player.seen++;
+
+        const post = feedPosts.find(p => p.id === postId);
+        if (post) {
+            post.likes = (post.likes || 1) + 1;
+            try {
+                await supabaseClient.from('soma_posts').update({ likes: post.likes }).eq('id', postId);
+            } catch(e) {}
+        }
+
+        await updateCloudProfile();
+        updateHeader();
+        renderFeed();
+    }
+
+    function triggerHelpBlock() {
+        player.helpAttempts++;
+        try { Telegram.WebApp.HapticFeedback.notificationOccurred('error'); } catch (e) {}
+        const bc = document.getElementById('block-card');
+        bc.classList.remove('animate-shake'); void bc.offsetWidth; bc.classList.add('animate-shake');
+        let egg = false;
+        try { egg = player.helpAttempts >= 10 && !localStorage.getItem('soma_egg'); } catch (e) {}
+        if (egg) {
+            try { localStorage.setItem('soma_egg', '1'); } catch (e) {}
+            player.xp += 100;
+            try { Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch (e) {}
+        }
+        updateCloudProfile();
+        updateHeader();
+        document.getElementById(egg ? 'egg-modal' : 'block-modal').classList.remove('hidden');
+    }
+    function closeEgg() { document.getElementById('egg-modal').classList.add('hidden'); }
+    function shareEgg() {
+        const text = 'Я нарушил протокол Soma Link. Не скажу как. Попробуй сам:';
+        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) {
+            Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(BOT_LINK) + '&text=' + encodeURIComponent(text));
+        } else { notify(text + ' ' + BOT_LINK); }
+    }
+    function closeBlockModal() { document.getElementById('block-modal').classList.add('hidden'); }
+
+    function openPostModal() { document.getElementById('post-modal').classList.remove('hidden'); }
+    function closePostModal() { document.getElementById('post-modal').classList.add('hidden'); }
+
+    function updateCharCount() {
+        const len = document.getElementById('new-pain-text').value.length;
+        document.getElementById('char-count').innerText = `${len} / 666`;
+    }
+
+    function notify(msg) {
+        try { Telegram.WebApp.showAlert(msg); } catch (e) { alert(msg); }
+    }
+
+    async function submitPainPost() {
+        const textareaEl = document.getElementById('new-pain-text');
+        const btn = document.getElementById('send-btn');
+        const text = textareaEl.value.trim().slice(0, 666);
+        if (!text) return;
+
+        const newPost = { id: 'p_' + Date.now(), author: anonLabel(player.name), tag: 'ЛИЧНАЯ БОЛЬ', text: text, likes: 1 };
+
+        const label = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'ОТПРАВКА...';
+        let failed = false, reason = '';
+        try {
+            if (!supabaseClient) throw new Error('Supabase не подключён');
+            const { error } = await supabaseClient.from('soma_posts').insert([newPost]);
+            if (error) throw error;
+        } catch (e) {
+            console.error('Ошибка отправки:', e);
+            failed = true;
+            reason = [e && e.message, e && e.code, e && e.hint].filter(Boolean).join(' | ') || String(e);
+        }
+        btn.disabled = false;
+        btn.innerText = label;
+
+        if (failed) {
+            notify('Сигнал не дошёл до сети.\n\nПричина: ' + reason);
+            return;
+        }
+        feedPosts.unshift(newPost);
+        closePostModal();
+        textareaEl.value = '';
+        updateCharCount();
+        renderFeed();
+        switchTab('feed');
+    }
+
+    function switchTab(tab) {
+        ['feed', 'top', 'profile'].forEach(t => {
+            document.getElementById(`view-${t}`).classList.add('hidden');
+            document.getElementById(`tab-${t}`).classList.remove('bg-red-950/60', 'text-red-400', 'font-bold', 'border', 'border-red-500/40');
+            document.getElementById(`tab-${t}`).classList.add('text-gray-400');
+        });
+        document.getElementById(`view-${tab}`).classList.remove('hidden');
+        document.getElementById(`tab-${tab}`).classList.add('bg-red-950/60', 'text-red-400', 'font-bold', 'border', 'border-red-500/40');
+        document.getElementById(`tab-${tab}`).classList.remove('text-gray-400');
+
+        if (tab === 'top') renderLeaderboard();
+        if (tab === 'profile') updateHeader();
+    }
+
+    async function renderLeaderboard() {
+        let data = null;
+        try {
+            let res = await supabaseClient.from('soma_users').select('*').order('xp', { ascending: false }).limit(10);
+            data = res.data;
+        } catch(e) {}
+
+        const list = document.getElementById('leaderboard-list');
+        if (!data || data.length === 0) {
+            data = [{ username: player.name, xp: player.xp, help_attempts: player.helpAttempts }];
+        }
+
+        list.innerHTML = data.map((b, idx) => `
+            <div class="p-3 bg-[#12080a] border ${b.username === player.name ? 'border-red-500/60' : 'border-red-500/20'} rounded-xl flex justify-between items-center text-xs font-mono-tech">
+                <div class="flex items-center space-x-3">
+                    <span class="text-gray-500 font-bold">#${idx + 1}</span>
+                    <div>
+                        <div class="text-white font-bold">@${esc(b.username)}</div>
+                        <div class="text-[10px] text-gray-500">Попыток помочь: ${b.help_attempts || 0}</div>
+                    </div>
+                </div>
+                <div class="text-red-400 font-bold">${b.xp || 0} XP</div>
+            </div>
+        `).join('');
+    }
+
+    function copyShareText() {
+        const rank = document.getElementById('rank-title').innerText;
+        const text = `SOMA_LINK // SILENCE PROTOCOL\nСвидетель: @${player.name}\nРанг: ${rank}\nПросмотрено драм: ${player.seen} | Пустых реакций: ${player.reacts} | Реальной помощи: 0.\n\nПопробуй не вмешаться:`;
+        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) {
+            Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(BOT_LINK) + '&text=' + encodeURIComponent(text));
+            return;
+        }
+        try { navigator.clipboard.writeText(text + ' ' + BOT_LINK); notify('Отчёт соучастия скопирован!'); }
+        catch (e) { notify(text + ' ' + BOT_LINK); }
+    }
+
+    window.addEventListener('load', initApp);
+</script>
+</body>
+</html>
