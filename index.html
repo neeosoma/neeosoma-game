@@ -38,7 +38,7 @@
                 Система запрещает перевод средств, передачу контактов и спасательство. Ваша единственная задача в Neeon City — наблюдать.
             </p>
             <div class="bg-black/50 p-3 rounded-xl text-[11px] font-mono-tech text-red-400 border border-red-500/20">
-                Доступны только дежурные реакции для прокачки ранга.
+                Доступны только реакции для прокачки ранга.
             </div>
             <button onclick="closeBlockModal()" class="w-full py-2.5 bg-red-950/60 hover:bg-red-900/80 border border-red-500/50 text-red-200 text-xs font-mono-tech rounded-xl transition">
                 ПРИНЯТЬ БЕССИЛИЕ И ПРОДОЛЖИТЬ
@@ -99,7 +99,7 @@
         <div id="view-feed" class="flex-1 overflow-y-auto p-3 space-y-3 pb-20">
             <button onclick="openPostModal()" class="w-full py-2.5 px-4 bg-[#12080a] hover:bg-[#1a0b0e] border border-dashed border-red-500/40 rounded-xl text-left flex justify-between items-center transition group">
                 <div>
-                    <div class="text-xs font-bold text-red-400 group-hover:text-red-300">+ Рассказать свою историю (лимит 666)</div>
+                    <div class="text-xs font-bold text-red-400 group-hover:text-red-300">+ Рассказать свою историю</div>
                     <div class="text-[10px] text-gray-500">Анонимный крик в сеть Soma Link.</div>
                 </div>
                 <span class="text-red-400 font-mono-tech text-lg">→</span>
@@ -169,11 +169,11 @@
 
     const ranks = [
         { minXp: 0, title: "УР. 1 // СЛУЧАЙНЫЙ ПРОХОЖИЙ" },
-        { minXp: 50, title: "УР. 2 // ЛЮБОПЫТНЫЙ ЗРИТЕЛЬ" },
-        { minXp: 150, title: "УР. 3 // ПОТРЕБИТЕЛЬ ДРАМ" },
-        { minXp: 300, title: "УР. 4 // ЦИНИЧНЫЙ ОБЫВАТЕЛЬ" },
-        { minXp: 500, title: "УР. 5 // МОЛЧАЛИВИЙ АНГЕЛ" },
-        { minXp: 1000, title: "УР. 10 // АБСОЛЮТНЫЙ НАБЛЮДАТЕЛЬ" }
+        { minXp: 500, title: "УР. 2 // ЛЮБОПЫТНЫЙ ЗРИТЕЛЬ" },
+        { minXp: 1500, title: "УР. 3 // ПОТРЕБИТЕЛЬ ДРАМ" },
+        { minXp: 3000, title: "УР. 4 // ЦИНИЧНЫЙ ОБЫВАТЕЛЬ" },
+        { minXp: 5000, title: "УР. 5 // МОЛЧАЛИВИЙ АНГЕЛ" },
+        { minXp: 10000, title: "УР. 10 // АБСОЛЮТНЫЙ НАБЛЮДАТЕЛЬ" }
     ];
 
     async function initApp() {
