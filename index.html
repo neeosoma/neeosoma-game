@@ -154,7 +154,7 @@
 
 <script>
     const SUPABASE_URL = 'sb_publishable_WrAgOsAcOdaUCe4lM82Psw_AT6jC5Qs';
-    const SUPABASE_ANON_KEY = 'sb_secret_1MI0PEhACHndPHerdZgK2w_aLkIjJvz';
+    const SUPABASE_ANON_KEY = 'sb_secret_l-KYZEvUcrvBCGh89F0KQQ_CRBc8yms';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let player = { name: "GUEST", xp: 0, seen: 0, reacts: 0, helpAttempts: 0, reactedPosts: {} };
@@ -182,11 +182,15 @@
             player.name = savedName;
         }
 
-        let { data } = await supabaseClient.from('soma_users').select('*').eq('username', player.name).single();
-        if (data) {
-            player = { ...player, ...data };
-        } else {
-            await supabaseClient.from('soma_users').insert([{ username: player.name, xp: 0, seen: 0, reacts: 0, help_attempts: 0 }]);
+        try {
+            let { data } = await supabaseClient.from('soma_users').select('*').eq('username', player.name).single();
+            if (data) {
+                player = { ...player, ...data };
+            } else {
+                await supabaseClient.from('soma_users').insert([{ username: player.name, xp: 0, seen: 0, reacts: 0, help_attempts: 0 }]);
+            }
+        } catch(e) {
+            console.log('Offline / DB mode active');
         }
 
         updateHeader();
@@ -194,22 +198,30 @@
     }
 
     async function fetchPosts() {
-        let { data } = await supabaseClient.from('soma_posts').select('*').order('created_at', { ascending: false });
-        if (data && data.length > 0) {
-            feedPosts = data;
-        } else {
-            feedPosts = [{ id: 'demo_1', author: 'Аноним #4092', tag: 'ДОЛГИ', text: 'Сегодня закрыли доступ к рабочей учетке. На карте 400 рублей, завтра платить за аренду. Впервые не знаю, что делать.', likes: 42, created_at: new Date() }];
+        try {
+            let { data } = await supabaseClient.from('soma_posts').select('*').order('created_at', { ascending: false });
+            if (data && data.length > 0) {
+                feedPosts = data;
+            } else {
+                throw new Error('Empty');
+            }
+        } catch(e) {
+            if (feedPosts.length === 0) {
+                feedPosts = [{ id: 'demo_1', author: 'Аноним #4092', tag: 'ДОЛГИ', text: 'Сегодня закрыли доступ к рабочей учетке. На карте 400 рублей, завтра платить за аренду. Впервые не знаю, что делать.', likes: 42, created_at: new Date() }];
+            }
         }
         renderFeed();
     }
 
     async function updateCloudProfile() {
-        await supabaseClient.from('soma_users').update({
-            xp: player.xp,
-            seen: player.seen,
-            reacts: player.reacts,
-            help_attempts: player.helpAttempts
-        }).eq('username', player.name);
+        try {
+            await supabaseClient.from('soma_users').update({
+                xp: player.xp,
+                seen: player.seen,
+                reacts: player.reacts,
+                help_attempts: player.helpAttempts
+            }).eq('username', player.name);
+        } catch(e) {}
     }
 
     function updateHeader() {
@@ -289,7 +301,9 @@
         const post = feedPosts.find(p => p.id === postId);
         if (post) {
             post.likes = (post.likes || 1) + 1;
-            await supabaseClient.from('soma_posts').update({ likes: post.likes }).eq('id', postId);
+            try {
+                await supabaseClient.from('soma_posts').update({ likes: post.likes }).eq('id', postId);
+            } catch(e) {}
         }
 
         await updateCloudProfile();
@@ -308,8 +322,11 @@
     function openPostModal() { document.getElementById('post-modal').classList.remove('hidden'); }
     function closePostModal() { document.getElementById('post-modal').classList.add('hidden'); }
 
+    // Надежная привязка счётчика символов для мобильных клавиатур
     const textareaEl = document.getElementById('new-pain-text');
-    textareaEl.addEventListener('input', updateCharCount);
+    ['input', 'keyup', 'paste', 'change'].forEach(evt => {
+        textareaEl.addEventListener(evt, updateCharCount);
+    });
 
     function updateCharCount() {
         const len = textareaEl.value.length;
@@ -328,11 +345,17 @@
             likes: 1
         };
 
-        await supabaseClient.from('soma_posts').insert([newPost]);
+        try {
+            await supabaseClient.from('soma_posts').insert([newPost]);
+        } catch(e) {
+            console.log('Saved locally due to network/DB restriction');
+        }
+
+        feedPosts.unshift(newPost);
         closePostModal();
         textareaEl.value = '';
         updateCharCount();
-        await fetchPosts();
+        renderFeed();
     }
 
     function switchTab(tab) {
@@ -350,9 +373,16 @@
     }
 
     async function renderLeaderboard() {
-        let { data } = await supabaseClient.from('soma_users').select('*').order('xp', { ascending: false }).limit(10);
+        let data = null;
+        try {
+            let res = await supabaseClient.from('soma_users').select('*').order('xp', { ascending: false }).limit(10);
+            data = res.data;
+        } catch(e) {}
+
         const list = document.getElementById('leaderboard-list');
-        if (!data) return;
+        if (!data || data.length === 0) {
+            data = [{ username: player.name, xp: player.xp, help_attempts: player.helpAttempts }];
+        }
 
         list.innerHTML = data.map((b, idx) => `
             <div class="p-3 bg-[#12080a] border ${b.username === player.name ? 'border-red-500/60' : 'border-red-500/20'} rounded-xl flex justify-between items-center text-xs font-mono-tech">
@@ -360,10 +390,10 @@
                     <span class="text-gray-500 font-bold">#${idx + 1}</span>
                     <div>
                         <div class="text-white font-bold">@${b.username}</div>
-                        <div class="text-[10px] text-gray-500">Попыток помочь: ${b.help_attempts}</div>
+                        <div class="text-[10px] text-gray-500">Попыток помочь: ${b.help_attempts || 0}</div>
                     </div>
                 </div>
-                <div class="text-red-400 font-bold">${b.xp} XP</div>
+                <div class="text-red-400 font-bold">${b.xp || 0} XP</div>
             </div>
         `).join('');
     }
@@ -378,4 +408,3 @@
 </script>
 </body>
 </html>
-
