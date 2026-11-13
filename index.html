@@ -112,7 +112,7 @@
             <button onclick="openPostModal()" class="w-full py-2.5 px-4 bg-[#12080a] hover:bg-[#1a0b0e] border border-dashed border-red-500/40 rounded-xl text-left flex justify-between items-center transition group">
                 <div>
                     <div class="text-xs font-bold text-red-400 group-hover:text-red-300">+ Рассказать свою историю</div>
-                    <div class="text-[10px] text-gray-500">Анонимный крик в сеть Soma Link.</div>
+                    <div class="text-[10px] text-gray-500">Анонимный крик в сеть SOMA LINK.</div>
                 </div>
                 <span class="text-red-400 font-mono-tech text-lg">→</span>
             </button>
@@ -308,7 +308,7 @@
                 <div class="pt-2 border-t border-red-500/10 space-y-2">
                     ${isReacted ? `
                         <div class="text-[11px] font-mono-tech text-red-400 flex justify-between items-center">
-                            <span>✓ Сурогат отправлен: «${esc(isReacted)}»</span>
+                            <span>✓ Суррогат отправлен: «${esc(isReacted)}»</span>
                             <span class="text-amber-400">+XP</span>
                         </div>
                     ` : `
@@ -373,7 +373,7 @@
     }
     function closeEgg() { document.getElementById('egg-modal').classList.add('hidden'); }
     function shareEgg() {
-        const text = 'Я нарушил протокол Soma Link. Не скажу как. Попробуй сам:';
+        const text = 'Я нарушил протокол SOMA LINK. Не скажу как. Попробуй сам:';
         if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) {
             Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(BOT_LINK) + '&text=' + encodeURIComponent(text));
         } else { notify(text + ' ' + BOT_LINK); }
