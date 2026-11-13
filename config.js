@@ -1,7 +1,7 @@
 // ===== НАСТРОЙКИ ПРОЕКТА: меняй только текст внутри кавычек '...' =====
 window.SOMA_CONFIG = {
   // Supabase → Project Settings → Data API → Project URL (начинается с https://)
-  SUPABASE_URL: 'https://acwekuahvcfubzxcxwcb.supabase.co/rest/v1/',
+  SUPABASE_URL: 'https://acwekuahvcfubzxcxwcb.supabase.co',
 
   // Supabase → Project Settings → API Keys → Publishable key (начинается с sb_publishable_)
   // Если такого нет — вкладка Legacy → ключ anon public (длинный, начинается с eyJ)
